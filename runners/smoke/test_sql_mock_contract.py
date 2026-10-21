@@ -80,6 +80,8 @@ class SQLMockContract(unittest.TestCase):
         )
 
     def test_empty_read_is_empty_and_dml_has_success_marker(self):
+        # Isolate the empty-result defect from identifier case translation.
+        self.assertEqual(self.query("SELECT 1 AS n WHERE FALSE"), [])
         self.assertEqual(
             self.query("SELECT * FROM SALES_DW.PUBLIC.CUSTOMERS WHERE CUSTOMER_ID=999"),
             [],
@@ -96,6 +98,11 @@ class SQLMockContract(unittest.TestCase):
         )
 
     def test_literals_comments_and_explicit_case_are_not_rewritten(self):
+        # No physical table/column is needed to observe literal corruption.
+        self.assertEqual(
+            self.query("SELECT 'SALES_DW.PUBLIC.CUSTOMERS' AS note"),
+            [{"NOTE": "SALES_DW.PUBLIC.CUSTOMERS"}],
+        )
         q = "SELECT 'SALES_DW.PUBLIC.CUSTOMERS' AS note, name FROM SALES_DW.PUBLIC.CUSTOMERS -- DB.PUBLIC.OTHER\n WHERE name='Alice'"
         self.assertEqual(
             self.query(q), [{"NOTE": "SALES_DW.PUBLIC.CUSTOMERS", "NAME": "Alice"}]
